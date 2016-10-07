@@ -1,0 +1,73 @@
+# Construyendo abstracciones con procedimientos
+
+Este capítulo consiste de tres secciones:
+
+- Los elementos de programación
+- Procedimientos y los procesos que generan
+- Formulando abstracciones
+
+## Los elementos de programación
+
+**Ejercicio 1.1:** Abajo se encuentra una secuencia de expresiones. ¿Cuál es el resultado impreso por el intérprete en respuesta a cada expresión? Asume que la secuencia es evaluada en el orden que aparece.
+
+
+```scheme
+1 (user) => 10
+
+;Value: 10
+
+1 (user) => (+ 5 3 4)
+
+;Value: 12
+
+1 (user) => (- 9 1)
+
+;Value: 8
+
+1 (user) => (/ 6 2)
+
+;Value: 3
+
+1 (user) => (+ (* 2 4) (- 4 6))
+
+;Value: 6
+
+1 (user) => (define a 3)
+
+;Value: a
+
+1 (user) => (define b (+ a 1))
+
+;Value: b
+
+1 (user) => (+ a b (* a b))
+
+;Value: 19
+
+1 (user) => (= a b)
+
+;Value: #f
+
+1 (user) => (if (and (> b a) (< b (* a b)))
+                b
+                a)
+
+;Value: 4
+
+1 (user) => (cond ((= a 4) 6)
+                  ((= b 4) (+ 6 7 a))
+                  (else 25))
+
+;Value: 16
+
+1 (user) => (+ 2 (if (> b a) b a))
+
+;Value: 6
+
+1 (user) => (* (cond ((> a b) a)
+                     ((< a b) b)
+                     (else -1))
+               (+ a 1))
+
+;Value: 16
+```
