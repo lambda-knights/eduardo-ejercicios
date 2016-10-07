@@ -1,5 +1,3 @@
-<!-- -*- mode: markdown -*- -->
-
 # Construyendo abstracciones con procedimientos
 
 Este capítulo consiste de tres secciones:
@@ -10,8 +8,9 @@ Este capítulo consiste de tres secciones:
 
 ## Los elementos de programación
 
-**Ejercicio 1.1:** Abajo se encuentra una secuencia de expresiones. ¿Cuál es el resultado impreso por el intérprete en respuesta a cada expresión? Asume que la secuencia es evaluada en el orden que aparece.
+**Ejercicio 1.1:** *Abajo se encuentra una secuencia de expresiones. ¿Cuál es el resultado impreso por el intérprete en respuesta a cada expresión? Asume que la secuencia es evaluada en el orden que aparece.*
 
+El siguiente bloque es una transcripción de la interacción con el intérprete de MIT/GNU Scheme:
 
 ```scheme
 1 (user) => 10
@@ -72,4 +71,85 @@ Este capítulo consiste de tres secciones:
                (+ a 1))
 
 ;Value: 16
+```
+
+**Ejercicio 1.2:** *Traduce la siguiente expresión a notación prefija:*
+$$\frac{5+4+(2-(3-(6+\frac{4}{5})))}{3(6-2)(2-7)}$$
+
+Scheme cuenta con una torre numérica bastante completa, por lo que $\frac{4}{5}$ puede ser escrito como `(/ 4 5)` o `4/5`.
+
+```scheme
+(/ (+ 5 4 (- 2 3 (+ 6 (/ 4 5))))
+   (* 3 (- 6 2) (- 2 7)))
+```
+
+**Ejercicio 1.3:** *Define un procedimiento que tome tres números como argumentos y regrese la suma de los cuadrados de los dos números más grandes.*
+
+<<src/1.3.scm>>=
+(define (proc n1 n2 n3)
+  (cond ((and (<= n1 n2) (<= n1 n3))
+         (+ (* n2 n2) (* n3 n3)))
+        ((and (<= n2 n1) (<= n2 n3))
+         (+ (* n1 n1) (* n3 n3)))
+        (else
+         (+ (* n1 n1) (* n2 n2)))))
+@ 
+
+**Ejercicio 1.4:** *Observa que nuestro modelo de evaluación permite combinaciones cuyos operadores son expresiones compuestas. Usa esta observación para describir el comportamiento del siguiente procedimiento:*
+
+```scheme
+(define (a-plus-abs-b a b)
+  ((if (> b 0) + -) a b))
+```
+
+El procedimiento `a-plus-abs-b` toma como argumentos dos números `a` y `b`, cuando `b` es un número positivo el resultado es la suma de los argumentos, en otro caso el resultado es la resta de los argumentos. Una manera más tradicional de implementar este procedimiento es:
+
+```scheme
+(define (a-plus-abs-b a b)
+  (if (> b 0)
+      (+ a b)
+      (- a b)))
+```
+
+Sin embargo, ya que el consecuente y la alternativa de la condicional difieren únicamente en su operador, este puede ser "factorizado" en una condicional en la posición de operador. Una manera alternativa de hacer más compacto el código es:
+
+```scheme
+(define (a-plus-abs-b a b)
+  (+ a (if (> b 0) b (- b))))
+```
+
+La cuál se asemeja más a la descripción textual del procedimiento.
+
+**Ejercicio 1.5:** *Ben Bitdiddle ha inventado una prueba para determinar si el intérprete que utiliza tiene un modelo de evaluación de orden-aplicativo o de orden-normal. El define los siguientes dos procedimientos:*
+
+```scheme
+(define (p) (p))
+(define (test x y)
+  (if (= x 0) 0 y))
+```
+
+*Luego el evalúa la expresión*
+
+```scheme
+(test 0 (p))
+```
+
+*¿Qué comportamiento va a observar Ben con un intérprete que evalúa con un orden-aplicativo? ¿Qué comportamiento va a observar con un intérprete que evalúa con orden-normal? Explica tu respuesta. (Asume que la regla de evaluación para la forma especial `if` es la misma independientemente del modelo de evaluación: El expresión de predicado es evaluada primero, y el resultado determina si se evalúa la expresión consecuente o la alternativa).*
+
+Con orden-aplicativo la expresión `(test 0 (p))` nunca termina de evaluarse, las sustituciones realizadas serían las siguientes:
+
+```scheme
+> (test 0 (p))
+> (test 0 (p))
+     ...
+> (test 0 (p))
+     ...
+```
+En el caso de orden-normal, el resultado es `0`, las sustituciones realizadas serían las siguientes:
+
+```scheme
+> (test 0 (p))
+> (if (= 0 0) 0 (p))
+> (if #t 0 (p))
+> 0
 ```
