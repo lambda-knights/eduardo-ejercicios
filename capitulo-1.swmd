@@ -139,17 +139,131 @@ La cuál se asemeja más a la descripción textual del procedimiento.
 Con orden-aplicativo la expresión `(test 0 (p))` nunca termina de evaluarse, las sustituciones realizadas serían las siguientes:
 
 ```scheme
-> (test 0 (p))
-> (test 0 (p))
+-> (test 0 (p))
+-> (test 0 (p))
      ...
-> (test 0 (p))
+-> (test 0 (p))
      ...
 ```
 En el caso de orden-normal, el resultado es `0`, las sustituciones realizadas serían las siguientes:
 
 ```scheme
-> (test 0 (p))
-> (if (= 0 0) 0 (p))
-> (if #t 0 (p))
+-> (test 0 (p))
+-> (if (= 0 0) 0 (p))
+-> (if #t 0 (p))
 > 0
 ```
+
+**Ejercicio 1.6:** *Alyssa P. Hacker no entiende porque `if` necesita ser una forma especial. "¿Por qué no se puede definir como un procedimiento ordinario en términos de `cond`?" pregunta. Eva Lu Ator, amiga de Alyssa, afirma que esto se puede hacer, y define una nueva versión de `if`:*
+
+```scheme
+(define (new-if predicate then-clause else-clause)
+  (cond (predicate then-clause)
+        (else else-clause)))
+```
+
+*Eva le demuestra a Alyssa el funcionamiento de este programa:*
+
+```scheme
+> (new-if (= 2 3) 0 5)
+5
+> (new-if (= 1 1) 0 5)
+0
+```
+
+*Encantada, Alyssa usa `new-if` para reescribir el programa del cálculo de raíces cuadradas:*
+
+```scheme
+(define (sqrt-iter guess x)
+  (new-if (good-enough? guess x)
+          guess
+          (sqrt-iter (improve guess x) x)))
+```
+
+*¿Qué ocurre cuando Alyssa intenta usar esta definición para computar raíces cuadradas? Explica.*
+
+Ya que el evaluador de Scheme es de orden-aplicativo, la expresión:
+`(new-if e1 e2 e3)`
+para cualesquier expresiones `e1` `e2` y `e3` es evaluada primero evaluando `new-if`, `e1`, `e2`, `e3` en algún orden en particular; posteriormente, en caso que `new-if` sea evaluado a un procedimiento (en este caso ocurre) se reduce la expresión al cuerpo del procedimiento en donde las apariciones de sus argumentos se sustituyen por las evaluaciones de `e1`, `e2`, `e3`, es decir, antes de reducir la expresión al `cond` de la definición de `new-if`, los argumentos de `new-if` ya fueron evaluados. Por lo tanto, si `e*` denota el resultado de evaluar `e`, las sustituciones serían las siguientes:
+
+```scheme
+-> (sqrt-iter e1 e2)
+-> (sqrt-iter* e1* e2*)
+-> (new-if (good-enough? e1* e2*)
+           e1*
+           (sqrt-iter (improve e1* e2*) e2*))
+-> (new-if* (good-enough?* e1* e2*)
+            e1*
+            (sqrt-iter* (improve* e1* e2*) e2*))
+-> (new-if* e3*
+            e1*
+            (sqrt-iter* e4* e2*))
+-> (new-if* e3*
+            e1*
+            (new-if (good-enough? e4* e2*)
+                    e4*
+                    (sqrt-iter (improve e4* e2*) e2*)))
+                    
+          ...
+```
+
+La expresión con el `sqrt-iter` es evaluada a una expresión con `new-if` la cuál a su vez contiene una expresión con `sqrt-iter`. Teóricamente el programa nunca dejará de ser evaluado.
+
+**Ejercicio 1.7:** *La prueba `good-enough?` usada en el cómputo de raíces cuadradas no será muy efectiva para encontrar raíces cuadradas de números muy pequeños. Además, en computadoras de verdad, las operaciones aritméticas son casi siempre realizadas con precisión limitada. Esto hace que nuestra prueba sea inadecuada para números muy grandes. Explica estos enunciados con ejemplos que muestren como la prueba falla para números pequeños y grandes. Una estrategia alternativa para implementar la prueba es observar como `guess` cambia de una iteración a la siguiente y parar cuando los cambios sean una fracción muy pequeña de la suposición. Diseña un procedimiento de raíz cuadrada que use este tipo de condición de paro. ¿Funciona mejor para números pequeños y grandes?.*
+
+<<src/1.7.scm>>=
+;;; Implementación de `sqrt`
+(define (sqrt-iter guess x)
+  (if (good-enough? guess x)
+      guess
+      (sqrt-iter (improve guess x) x)))
+
+(define (improve guess x)
+  (average guess (/ x guess)))
+
+(define (average x y)
+  (/ (+ x y) 2))
+
+(define (good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
+
+(define (sqrt x)
+  (sqrt-iter 1.0 x))
+@ 
+
+Para demostrar la manera en como el algoritmo falla con números pequeños consideremos comparar `x` con `(square (sqrt x))`:
+
+Para `x` = `1e0`
+: resulta en `1e0`
+
+Para `x` = `1e-1`
+: resulta en `1.0001125566203942e-1`
+
+Para `x` = `1e-2`
+: resulta en `1.006526315785885e-2`
+
+Para `x` = `1e-3`
+: resulta en `1.7011851721075596e-3`
+
+Para `x` = `1e-4`
+: resulta en `1.0438358335233748e-3`
+
+En este último caso hay un orden de magnitud de diferencia entre el valor real y el valor computado por el procedimiento.
+
+Con respecto al problema con números de punto flotante muy grandes, se puede observar que un número como `1e309` no puede ser representado como un número flotante en MIT/GNU Scheme.
+
+La implementación del algoritmo propuesto por el ejercicio es similar a `sqrt-iter` solo que ahora se guarda la anterior suposición:
+
+<<src/1.7.scm>>=
+;;; Implementación mejorada
+(define (sqrt-iter* old-guess guess x)
+  (if (good-enough?* guess old-guess)
+      guess
+      (sqrt-iter* guess (improve guess x) x)))
+
+(define (good-enough?* guess old-guess)
+  (< (abs (- guess old-guess)) (* 0.001 guess)))
+
+(define (sqrt* x)
+  (sqrt-iter* 0.0 1.0 x))
+@ 
